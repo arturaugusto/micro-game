@@ -1,5 +1,7 @@
 # Micro-game
 
+![alt tag](img.jpg)
+
 ## Learning Rust, embedded devices (stm32), game development and having fun and at the same time.
 
 watch and build:
