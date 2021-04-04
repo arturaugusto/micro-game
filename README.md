@@ -4,6 +4,8 @@
 
 ## Learning Rust, embedded devices (stm32), game development and having fun and at the same time.
 
+Gameplay: https://www.youtube.com/watch?v=BnHSmtdbuVA
+
 watch and build:
 cargo watch -cx 'build --release'
 
