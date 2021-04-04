@@ -9,7 +9,5 @@ watch + upload :
 cargo watch -cx 'flash --chip stm32f103C8 --release'
 
 
-This s a hobby project that I made to learn Rust, Embedded development and Game Development at the same time, while having fun.
-
 
 
