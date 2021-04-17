@@ -27,7 +27,6 @@ nb = { version = "0.1.1" }
 futures = { version = "0.1.23", default-features = false }
 
 
-
 [dependencies.microfft]
 default-features = false
 features = ["maxn-1024"]
