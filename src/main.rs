@@ -83,9 +83,9 @@ fn main() -> ! {
 
     // configure pa0 as an analog input
 
-    // configure pb10 as an digital input
-    let mut a_btn = gpiob.pb10.into_dynamic(&mut gpiob.crh);
-    a_btn.make_floating_input(&mut gpiob.crh);
+    // configure pb1 as an digital input
+    let mut a_btn = gpiob.pb1.into_dynamic(&mut gpiob.crl);
+    a_btn.make_floating_input(&mut gpiob.crl);
 
     // let mut b_btn = gpiob.pb11.into_dynamic(&mut gpiob.crh);
     // b_btn.make_floating_input(&mut gpiob.crh);
@@ -97,7 +97,8 @@ fn main() -> ! {
     let mut ch1 = gpioa.pa1.into_analog(&mut gpioa.crl);
     let mut ch2 = gpioa.pa2.into_analog(&mut gpioa.crl);
 
-    let mut delay = Delay::new(cp.SYST, clocks);
+    let delay = unsafe { &mut *DELAY.as_mut_ptr() };
+    *delay = Delay::new(cp.SYST, clocks);
 
     // Prepare the alternate function I/O registers
     let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
@@ -106,11 +107,11 @@ fn main() -> ! {
 
     let pins = gpiob.pb9.into_alternate_push_pull(&mut gpiob.crh);
 
-    let mut pwm = Timer::tim4(dp.TIM4, &clocks, &mut rcc.apb1).pwm::<Tim4NoRemap, _, _, _>(
-        pins,
-        &mut afio.mapr,
-        1.khz(),
-    );
+    // let PWM = unsafe { &mut *PWM.as_mut_ptr() };
+    let mut pwm = Timer::tim4(dp.TIM4, &clocks, &mut rcc.apb1)
+        .pwm::<Tim4NoRemap, stm32f1xx_hal::pwm::C4, stm32f1xx_hal::gpio::gpiob::PB9<
+            stm32f1xx_hal::gpio::Alternate<stm32f1xx_hal::gpio::PushPull>,
+        >, stm32f1xx_hal::time::KiloHertz>(pins, &mut afio.mapr, 1.khz());
 
     let max = pwm.get_max_duty();
     pwm.set_duty(Channel::C4, max / 10);
@@ -136,20 +137,20 @@ fn main() -> ! {
     // // Set up the usart device. Taks ownership over the USART register and tx/rx pins. The rest of
     // // the registers are used to enable and configure the device.
 
-    {
-        let led = unsafe { &mut *LED.as_mut_ptr() };
-        *led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
+    // {
+    //     let led = unsafe { &mut *LED.as_mut_ptr() };
+    //     *led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
-        let int_pin = unsafe { &mut *INT_PIN.as_mut_ptr() };
-        *int_pin = gpiob.pb8.into_floating_input(&mut gpiob.crh);
-        int_pin.make_interrupt_source(&mut afio);
-        int_pin.trigger_on_edge(&dp.EXTI, Edge::RISING_FALLING);
-        int_pin.enable_interrupt(&dp.EXTI);
-    }
+    //     let int_pin = unsafe { &mut *INT_PIN.as_mut_ptr() };
+    //     *int_pin = gpiob.pb8.into_floating_input(&mut gpiob.crh);
+    //     int_pin.make_interrupt_source(&mut afio);
+    //     int_pin.trigger_on_edge(&dp.EXTI, Edge::RISING_FALLING);
+    //     int_pin.enable_interrupt(&dp.EXTI);
+    // }
 
-    unsafe {
-        pac::NVIC::unmask(pac::Interrupt::EXTI9_5);
-    }
+    // unsafe {
+    //     pac::NVIC::unmask(pac::Interrupt::EXTI9_5);
+    // }
 
     // Display
 
@@ -160,7 +161,7 @@ fn main() -> ! {
     let mosi = gpioa.pa7.into_alternate_push_pull(&mut gpioa.crl);
 
     let mut rst = gpiob.pb0.into_push_pull_output(&mut gpiob.crl);
-    let dc = gpiob.pb1.into_push_pull_output(&mut gpiob.crl);
+    let dc = gpiob.pb10.into_push_pull_output(&mut gpiob.crh);
 
     let spi = Spi::spi1(
         dp.SPI1,
@@ -178,7 +179,7 @@ fn main() -> ! {
     let interface = display_interface_spi::SPIInterfaceNoCS::new(spi, dc);
     let mut disp: GraphicsMode<_> = Builder::new().connect(interface).into();
 
-    disp.reset(&mut rst, &mut delay).unwrap();
+    disp.reset(&mut rst, &mut *delay).unwrap();
     disp.init().unwrap();
 
     let mut world = World::new(adc1.read(&mut ch1).unwrap());
@@ -205,26 +206,26 @@ fn main() -> ! {
         let adc1_data: u16 = adc1.read(&mut ch1).unwrap();
         if adc1_data < 400 || adc1_data > 2500 {
             if adc1_data > 2000u16 {
-                input.y_move = -1;
+                input.x_move = -1;
             }
             if adc1_data < 2000u16 {
-                input.y_move = 1;
+                input.x_move = 1;
             }
         } else {
-            input.y_move = 0;
+            input.x_move = 0;
         }
 
         // xaxis
         let adc2_data: u16 = adc2.read(&mut ch2).unwrap();
         if adc2_data < 400 || adc2_data > 2500 {
             if adc2_data > 2000u16 {
-                input.x_move = 1;
+                input.y_move = -1;
             }
             if adc2_data < 2000u16 {
-                input.x_move = -1;
+                input.y_move = 1;
             }
         } else {
-            input.x_move = 0;
+            input.y_move = 0;
         }
 
         // handle button
@@ -251,7 +252,7 @@ fn main() -> ! {
                 match world.tick(input) {
                     // you loose
                     1 => {
-                        delay.delay_ms(2000u16);
+                        pwm.disable(Channel::C4);
                         world = World::new(adc1.read(&mut ch1).unwrap());
                     }
                     // nothing

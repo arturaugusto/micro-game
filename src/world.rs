@@ -39,6 +39,10 @@ pub static mut RX: MaybeUninit<stm32f1xx_hal::serial::Rx<stm32f1xx_hal::pac::USA
 pub static mut TX: MaybeUninit<stm32f1xx_hal::serial::Tx<stm32f1xx_hal::pac::USART1>> =
     MaybeUninit::uninit();
 
+pub static mut DELAY: MaybeUninit<stm32f1xx_hal::delay::Delay> = MaybeUninit::uninit();
+
+// pub static mut PWM: MaybeUninit<Pwm> = MaybeUninit::uninit();
+
 pub static mut BLAST: bool = false;
 
 pub const POOL_SIZE: usize = 100;
@@ -180,6 +184,7 @@ impl World {
 
     pub fn tick(&mut self, input: PlayerInput) -> u16 {
         let txs = unsafe { &mut *TX.as_mut_ptr() };
+        let delay = unsafe { &mut *DELAY.as_mut_ptr() };
 
         // spawn new enemies
         if self.random.gen_min_max(0, 1000) < 100 + (self.score as u64) {
@@ -258,7 +263,10 @@ impl World {
                         if self.entities[j].del == false && self.entities[j].typ == 1 {
                             let mut enemy = self.entities[j];
                             if self.has_collision(entity, enemy) {
-                                enemy.del = true;
+                                // enemy.del = true;
+
+                                // set to disolve state
+                                enemy.state = 40;
                                 entity.del = true;
                                 // update score
                                 self.score += 1;
@@ -284,6 +292,11 @@ impl World {
                             let enemy = self.entities[j];
                             if self.has_collision(entity, enemy) {
                                 self.score = 0;
+                                self.sound.counter = 3;
+                                self.sound.counter_end = 4;
+                                self.sound.active = true;
+
+                                delay.delay_ms(2000u16);
                                 return 1u16;
                             }
                         }
@@ -351,16 +364,29 @@ impl World {
                     entity.state = entity.state.wrapping_add(1);
 
                     // sprite animation
-                    if entity.state >= 20 {
-                        entity.state = 0;
+                    if entity.state < 30 {
+                        // state < 30 enemy is animating
+                        if entity.state >= 20 {
+                            entity.state = 0;
+                        }
+                        if entity.state < 20 {
+                            entity.sprite_x = 19;
+                        }
+                        if entity.state < 10 {
+                            entity.sprite_x = 0;
+                        }
+                    } else {
+                        // state > 40 enemy is dissolving
+                        if entity.state < 42 {
+                            // set "dissolve" sprite position
+                            entity.sprite_y = 63;
+                        } else {
+                            // reset entity
+                            entity.state = 0;
+                            entity.del = true;
+                            entity.sprite_y = 24;
+                        }
                     }
-                    if entity.state < 20 {
-                        entity.sprite_x = 19;
-                    }
-                    if entity.state < 10 {
-                        entity.sprite_x = 0;
-                    }
-
                     self.entities[i] = entity;
                 }
 
