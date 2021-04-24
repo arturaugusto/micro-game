@@ -2,9 +2,12 @@
 
 ![alt tag](img.jpg)
 
-## Learning Rust, embedded devices (stm32), game development and having fun and at the same time.
+## Learning Rust, embedded devices (stm32), game development and having fun.
 
-Gameplay: https://www.youtube.com/watch?v=BnHSmtdbuVA
+Gameplay 1: https://youtu.be/5nPGiNsgY70
+Gameplay 2: https://youtu.be/BnHSmtdbuVA
+Gameplay 3: https://youtu.be/5l7y0dTvIQc
+
 
 watch and build:
 cargo watch -cx 'build --release'
@@ -13,6 +16,7 @@ watch + upload :
 cargo watch -cx 'flash --chip stm32f103C8 --release'
 
 
+## Connections
 
 
 Display
