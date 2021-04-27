@@ -19,15 +19,6 @@ cargo watch -cx 'flash --chip stm32f103C8 --release'
 ## Wireup
 
 
- Tables        | Are           | Cool  
- ------------- |:-------------:| -----:
- col 3 is      | right-aligned | $1600 
- col 2 is      | centered      |   $12 
- zebra stripes | are neat      |    $1 
-
-
-
-
  Display | STM32
  -- | --
 GND | G 
